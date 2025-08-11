@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Site Scrape Report</title>
+  <link rel="stylesheet" href="../report/styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Site Scrape Report</h1>
+      <span class="badge">{{ summary.num_pages }} pages</span>
+    </div>
+
+    <div class="card" style="margin-bottom: 16px;">
+      <div><strong>Start URL:</strong> <a href="{{ summary.start_url }}" target="_blank">{{ summary.start_url }}</a></div>
+      <div class="muted" style="margin-top:4px;">Started at {{ summary.started_at }} — Finished at {{ summary.finished_at }}</div>
+      {% if summary.num_errors and summary.num_errors > 0 %}
+      <div style="margin-top:4px;color:#991b1b;">Errors: {{ summary.num_errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Pages</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>URL</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Title</th>
+              <th>Tables</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in pages %}
+            <tr>
+              <td class="code" style="max-width:520px;overflow:hidden;text-overflow:ellipsis;">{{ p.final_url }}</td>
+              <td>{{ 'PDF' if p.is_pdf else 'HTML' }}</td>
+              <td>{{ p.status }}</td>
+              <td>{{ p.title or '' }}</td>
+              <td>
+                {% if p.is_pdf %}
+                  {% if p.tables %}{{ p.tables|length }}{% else %}0{% endif %}
+                {% else %}
+                  {% if p.tables %}{{ p.tables|length }}{% else %}0{% endif %}
+                {% endif %}
+              </td>
+              <td><a href="pages/{{ p.id }}.html" target="_blank">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
