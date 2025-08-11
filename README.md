@@ -21,7 +21,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2) Crawl a site:
+2) Easiest: paste a URL and go
+
+```bash
+python -m scraper https://example.com
+```
+
+This will crawl up to 200 pages (depth 2) and write to `data/scrape.db`.
+
+3) Full control (CLI):
 
 ```bash
 python -m scraper crawl https://example.com \
@@ -30,14 +38,14 @@ python -m scraper crawl https://example.com \
   --output-db data/scrape.db
 ```
 
-3) Export results:
+4) Export results:
 
 ```bash
 python -m scraper export data/scrape.db --format json --out pages.json
 python -m scraper export data/scrape.db --format csv --out pages.csv
 ```
 
-4) Optional: JavaScript rendering
+5) Optional: JavaScript rendering
 
 ```bash
 pip install playwright
