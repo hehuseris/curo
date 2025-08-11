@@ -1,13 +1,7 @@
-aiolimiter==1.1.0
-aiosqlite==0.20.0
-beautifulsoup4==4.12.3
 httpx[http2]==0.27.2
-lxml[html_clean]==5.3.0
-readability-lxml==0.8.1
-rich==13.7.1
-tenacity==9.0.0
-tldextract==5.1.2
-typer==0.12.3
+selectolax==0.3.24
+aiolimiter==1.1.0
 PyYAML==6.0.2
-# Optional: for JS rendering support (install separately and run `playwright install`)
-# playwright==1.47.0
+defusedxml==0.7.1
+# Optional JS rendering:
+# pip install playwright && python -m playwright install
