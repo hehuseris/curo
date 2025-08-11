@@ -1,101 +1,87 @@
-# Full-Featured Web Scraper (Async, CLI)
+# Industry-grade Website Scraper (Windows-friendly)
 
-A production-ready, async web scraper with:
+A robust, configurable website scraper and crawler that respects robots.txt, supports sitemaps, concurrency, rate limiting, and exports to JSONL/CSV. Optional JavaScript rendering is powered by Playwright.
 
-- Robots.txt compliance and domain scoping
-- Rate limiting, concurrency control, retries and timeouts
-- HTML parsing and boilerplate removal (readability) for clean text
-- SQLite storage (HTML, text, title, headers, status, metadata)
-- Export to JSON/CSV
-- Optional JavaScript rendering via Playwright
-- Resume and deduping of URLs
-- Config via CLI flags or YAML
+## Features
+- Respect robots.txt; auto-discovers sitemaps
+- Async concurrency with per-domain rate limiting
+- URL allow/deny patterns, depth limits, and max pages
+- Extracts page title, meta description, text excerpt, and outgoing links
+- Export to JSONL and/or CSV
+- Optional JS rendering with Playwright
+- Windows-friendly installation and usage
 
-## Quickstart
+## Requirements
+- Python 3.10+
+- Windows 10/11, macOS, or Linux
 
-1) Create a virtualenv and install dependencies:
+## Quickstart (Windows)
+1) Create and activate a virtual environment:
+```
+py -3.10 -m venv .venv
+.\.venv\Scripts\activate
+```
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
+2) Install dependencies:
+```
 pip install -r requirements.txt
 ```
 
-2) Easiest: paste a URL and go
-
-```bash
-python -m scraper https://example.com
+3) (Optional) Install Playwright browsers if you plan to use `--render js`:
+```
+python -m playwright install
 ```
 
-This will crawl up to 200 pages (depth 2) and write to `data/scrape.db`.
-
-3) Full control (CLI):
-
-```bash
-python -m scraper crawl https://example.com \
-  --max-pages 200 --max-depth 2 \
-  --concurrency 8 --rate-limit 1 \
-  --output-db data/scrape.db
+4) Run the scraper:
+```
+python -m scraper --start https://example.com --out data/output.jsonl
 ```
 
-4) Export results:
-
-```bash
-python -m scraper export data/scrape.db --format json --out pages.json
-python -m scraper export data/scrape.db --format csv --out pages.csv
+## CLI Usage
 ```
-
-5) Optional: JavaScript rendering
-
-```bash
-pip install playwright
-playwright install
-python -m scraper crawl https://example.com --render-js
-```
-
-## CLI
-
-```bash
 python -m scraper --help
-python -m scraper crawl --help
-python -m scraper export --help
 ```
 
-## Configuration via YAML (optional)
+Examples:
+```
+# Crawl a site with defaults and export JSONL
+python -m scraper --start https://example.com --out data/output.jsonl
 
-Example `config.yaml`:
+# Constrain the crawl to a domain and export CSV
+python -m scraper --start https://example.com \
+  --allowed-domain example.com \
+  --out data/output.csv --format csv
 
-```yaml
-start_urls:
-  - https://example.com
-max_pages: 300
-max_depth: 2
-concurrency: 10
-rate_limit_per_host: 1
-respect_robots: true
-user_agent: "MyScraper/1.0 (+contact@example.com)"
-include_domains:
-  - example.com
-exclude_regex: null
-render_js: false
-output_db: data/scrape.db
+# Use JS rendering (slower) for JS-heavy sites
+python -m scraper --start https://example.com --render js --out data/js.jsonl
+
+# Respect robots (default) and discover sitemaps
+python -m scraper --start https://example.com --use-sitemaps
+
+# Limit pages and depth
+python -m scraper --start https://example.com --max-pages 200 --max-depth 3
+
+# Include/Exclude URL patterns
+python -m scraper --start https://example.com --include ".*blog.*" --exclude ".*\?utm.*"
 ```
 
-Run with:
-
-```bash
-python -m scraper crawl --config config.yaml
+## Config via YAML (optional)
+You can pass a YAML config file:
 ```
-
-## Docker
-
-```bash
-docker build -t scraper .
-docker run --rm -v $(pwd)/data:/app/data scraper python -m scraper crawl https://example.com --output-db data/scrape.db
+python -m scraper --config config.example.yaml
 ```
+See `config.example.yaml` for all available options.
+
+## Outputs
+- JSONL: Each line is one JSON record
+- CSV: Columns: url, status, title, meta_description, text_excerpt, num_links
 
 ## Notes
+- The scraper respects robots.txt disallow rules. You can disable with `--ignore-robots`.
+- Crawl delays from robots are not guaranteed; a general per-domain rate limiter is applied.
+- Use `--render js` only when needed; it is slower and requires Playwright browsers installed.
 
-- Use `--respect-robots/--no-respect-robots` to control robots.txt behavior (defaults to respecting).
-- Use `--include-domains` to restrict to certain domains; otherwise defaults to the start URL's registrable domain.
-- For large crawls, prefer lower concurrency and a rate limit of 1-2 req/s per host to be polite.
+## Development
+```
+python -m scraper --help
+```

@@ -1,0 +1,21 @@
+# Example configuration for the scraper
+start_urls:
+  - https://example.com
+allowed_domains:
+  - example.com
+include_patterns: []
+exclude_patterns: []
+
+max_pages: 500
+max_depth: 3
+
+concurrency: 10
+per_domain_rps: 2.0
+user_agent: Mozilla/5.0 (compatible; SimpleScraper/1.0)
+obey_robots: true
+use_sitemaps: true
+render_mode: none  # none | js
+timeout_seconds: 20.0
+
+output_format: jsonl  # jsonl | csv
+output_path: data/output.jsonl
