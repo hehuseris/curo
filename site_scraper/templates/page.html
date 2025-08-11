@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Page • {{ page.final_url }}</title>
+  <link rel="stylesheet" href="../styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin:0;">Page</h1>
+      <a href="../index.html">← Back to index</a>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card">
+          <div><strong>URL:</strong> <span class="code">{{ page.final_url }}</span></div>
+          <div class="muted" style="margin-top:4px;">Type: {{ 'PDF' if page.is_pdf else 'HTML' }} • Status: {{ page.status }}</div>
+          {% if page.error %}
+          <div style="margin-top:4px;color:#991b1b;">Error: {{ page.error }}</div>
+          {% endif %}
+        </div>
+
+        {% if page.is_pdf %}
+          <div class="card">
+            <h2 style="margin-top:0;">PDF</h2>
+            {% if page.pdf_file %}
+              <div>File: <a href="../{{ page.pdf_file }}" target="_blank">Download</a></div>
+            {% endif %}
+            {% if page.text_file %}
+              <div style="margin-top:8px;">Extracted text: <a href="../{{ page.text_file }}" target="_blank">Open</a></div>
+            {% endif %}
+            {% if page.tables %}
+              <h3>Extracted tables ({{ page.tables|length }})</h3>
+              <ul>
+                {% for t in page.tables %}
+                <li><a href="../{{ t }}" target="_blank">Table {{ loop.index }}</a></li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="muted">No tables detected.</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="card">
+            <h2 style="margin-top:0;">HTML</h2>
+            {% if page.title %}<div><strong>Title:</strong> {{ page.title }}</div>{% endif %}
+            {% if page.text_file %}
+              <div style="margin-top:8px;">Extracted text: <a href="../{{ page.text_file }}" target="_blank">Open</a></div>
+            {% endif %}
+            {% if page.tables and page.tables|length > 0 %}
+              <h3>Extracted tables ({{ page.tables|length }})</h3>
+              {% for t in page.tables %}
+                <div class="card" style="margin:12px 0;">
+                  {% if t.caption %}<div class="muted">{{ t.caption }}</div>{% endif %}
+                  {% if t.csv %}
+                    <div>CSV: <a href="../{{ t.csv }}" target="_blank">Download</a></div>
+                  {% endif %}
+                  <div class="table-wrap">
+                    <table>
+                      <tbody>
+                        {% for row in range(0, t.num_rows) %}
+                          <tr>
+                            {% set cols = t.num_cols %}
+                            {% for col in range(0, cols) %}
+                              <td><!-- preview suppressed for brevity --></td>
+                            {% endfor %}
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="muted">No tables detected.</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div>
+        <div class="card">
+          <h3 style="margin-top:0;">Files</h3>
+          {% if page.text_file %}
+            <div>Text: <a href="../{{ page.text_file }}" target="_blank">Open</a></div>
+          {% endif %}
+          {% if page.pdf_file %}
+            <div>PDF: <a href="../{{ page.pdf_file }}" target="_blank">Download</a></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

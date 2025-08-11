@@ -1,0 +1,30 @@
+[
+  {
+    "id": "100680ad546ce6a5",
+    "url": "https://example.com",
+    "final_url": "https://example.com",
+    "status": 200,
+    "content_type": "text/html",
+    "is_pdf": false,
+    "html": {
+      "title": "Example Domain",
+      "meta_description": null,
+      "headings": {
+        "h1": [
+          "Example Domain"
+        ],
+        "h2": [],
+        "h3": [],
+        "h4": [],
+        "h5": [],
+        "h6": []
+      },
+      "text_file": "pages/100680ad546ce6a5/text.txt",
+      "tables": []
+    },
+    "pdf": null,
+    "links": [],
+    "assets": {},
+    "error": null
+  }
+]

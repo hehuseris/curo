@@ -1,87 +1,62 @@
-# Industry-grade Website Scraper (Windows-friendly)
+# Site Scraper (Async, with PDF/table extraction and clean reports)
 
-A robust, configurable website scraper and crawler that respects robots.txt, supports sitemaps, concurrency, rate limiting, and exports to JSONL/CSV. Optional JavaScript rendering is powered by Playwright.
+Features
+- Crawl an entire site (same origin), async + concurrent
+- Extract HTML text, headings, and tables
+- Download and parse PDFs (text + tables)
+- Persist clean, structured outputs (JSON, CSV, TXT)
+- Generate a beautiful static HTML report
+- Live progress bar with current URL
 
-## Features
-- Respect robots.txt; auto-discovers sitemaps
-- Async concurrency with per-domain rate limiting
-- URL allow/deny patterns, depth limits, and max pages
-- Extracts page title, meta description, text excerpt, and outgoing links
-- Export to JSONL and/or CSV
-- Optional JS rendering with Playwright
-- Windows-friendly installation and usage
+## Quick start
 
-## Requirements
-- Python 3.10+
-- Windows 10/11, macOS, or Linux
+1. Install dependencies:
 
-## Quickstart (Windows)
-1) Create and activate a virtual environment:
-```
-py -3.10 -m venv .venv
-.\.venv\Scripts\activate
-```
-
-2) Install dependencies:
-```
+```bash
 pip install -r requirements.txt
 ```
 
-3) (Optional) Install Playwright browsers if you plan to use `--render js`:
-```
-python -m playwright install
-```
+2. Run the scraper:
 
-4) Run the scraper:
-```
-python -m scraper --start https://example.com --out data/output.jsonl
+```bash
+python -m site_scraper.cli scrape https://example.com -o ./output --concurrency 8 --max-depth 2 --max-pages 200
 ```
 
-## CLI Usage
+3. Open the report:
+
+- Open `output/report/index.html` in your browser.
+
+## CLI options
+
+- `url` (arg): Start URL
+- `--output, -o`: Output directory (default: `./scrapes/<domain>__<timestamp>`)
+- `--concurrency`: Concurrent requests (default 8)
+- `--delay`: Delay between requests per worker (seconds)
+- `--max-pages`: Max pages to fetch
+- `--max-depth`: Max crawl depth
+- `--user-agent`: User-Agent header
+- `--no-report`: Skip report generation
+
+## Output structure
+
 ```
-python -m scraper --help
+<output>/
+  results.json              # Machine-readable summary
+  pages/<page_id>/          # Per-page extracted artifacts
+    text.txt
+    table_1.csv
+    ...
+  assets/pdfs/
+    <id>.pdf
+    <id>.txt
+    <id>_table_1.csv
+  report/
+    index.html
+    pages/<id>.html
+    styles.css
 ```
 
-Examples:
-```
-# Crawl a site with defaults and export JSONL
-python -m scraper --start https://example.com --out data/output.jsonl
-
-# Constrain the crawl to a domain and export CSV
-python -m scraper --start https://example.com \
-  --allowed-domain example.com \
-  --out data/output.csv --format csv
-
-# Use JS rendering (slower) for JS-heavy sites
-python -m scraper --start https://example.com --render js --out data/js.jsonl
-
-# Respect robots (default) and discover sitemaps
-python -m scraper --start https://example.com --use-sitemaps
-
-# Limit pages and depth
-python -m scraper --start https://example.com --max-pages 200 --max-depth 3
-
-# Include/Exclude URL patterns
-python -m scraper --start https://example.com --include ".*blog.*" --exclude ".*\?utm.*"
-```
-
-## Config via YAML (optional)
-You can pass a YAML config file:
-```
-python -m scraper --config config.example.yaml
-```
-See `config.example.yaml` for all available options.
-
-## Outputs
-- JSONL: Each line is one JSON record
-- CSV: Columns: url, status, title, meta_description, text_excerpt, num_links
-
-## Notes
-- The scraper respects robots.txt disallow rules. You can disable with `--ignore-robots`.
-- Crawl delays from robots are not guaranteed; a general per-domain rate limiter is applied.
-- Use `--render js` only when needed; it is slower and requires Playwright browsers installed.
-
-## Development
-```
-python -m scraper --help
-```
+Notes
+- The crawler stays within the same origin (scheme + host + port).
+- PDFs are processed best-effort; complex layouts may not extract perfectly.
+- Respect target sites' robots and terms of service.
