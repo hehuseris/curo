@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
@@ -18,20 +18,17 @@ app = typer.Typer(add_completion=False)
 console = Console()
 
 
-@app.command()
-def scrape(
-    url: str = typer.Argument(..., help="Starting URL for the crawl"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
-    concurrency: int = typer.Option(8, help="Concurrent requests"),
-    delay: float = typer.Option(0.0, help="Politeness delay between requests per worker (seconds)"),
-    max_pages: Optional[int] = typer.Option(None, help="Max pages to fetch"),
-    max_depth: Optional[int] = typer.Option(None, help="Max crawl depth (0 = only the start page)"),
-    user_agent: str = typer.Option("SiteScraper/0.1 (+https://example.com)", help="User-Agent header"),
-    no_report: bool = typer.Option(False, help="Skip generating HTML report"),
+def run_scrape(
+    url: str,
+    output: Optional[str],
+    concurrency: int,
+    delay: float,
+    max_pages: Optional[int],
+    max_depth: Optional[int],
+    user_agent: str,
+    no_report: bool,
 ) -> None:
-    """Scrape a website (HTML pages and PDFs), extract tables, and generate a clean report."""
-
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     ts = start_time.strftime("%Y%m%d_%H%M%S")
     out_dir = Path(output) if output else Path.cwd() / "scrapes" / f"{get_domain_dirname(url)}__{ts}"
     ensure_dir(out_dir)
@@ -47,7 +44,6 @@ def scrape(
         console=console,
     )
 
-    # Because total is unknown, we will update it dynamically to discovered count
     task_id = progress.add_task("Crawling", total=1)
 
     def on_progress(state: Dict[str, Any]) -> None:
@@ -70,7 +66,6 @@ def scrape(
     with progress:
         results: List[PageResult] = asyncio.run(crawler.crawl())
 
-    # Persist machine-readable JSON
     results_json = [
         {
             "id": r.id,
@@ -92,8 +87,8 @@ def scrape(
     if not no_report:
         summary = {
             "start_url": url,
-            "started_at": start_time.isoformat() + "Z",
-            "finished_at": datetime.utcnow().isoformat() + "Z",
+            "started_at": start_time.isoformat().replace("+00:00", "Z"),
+            "finished_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "num_pages": len(results),
             "num_errors": sum(1 for r in results if r.error),
             "output_dir": str(out_dir),
@@ -117,6 +112,20 @@ def scrape(
         write_report(out_dir, summary, pages_payload)
 
     console.print(f"\n[bold green]Done.[/bold green] Output in: {out_dir}")
+
+
+@app.command("scrape")
+def scrape_cmd(
+    url: str = typer.Argument(..., help="Starting URL for the crawl"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
+    concurrency: int = typer.Option(8, help="Concurrent requests"),
+    delay: float = typer.Option(0.0, help="Politeness delay between requests per worker (seconds)"),
+    max_pages: Optional[int] = typer.Option(None, help="Max pages to fetch"),
+    max_depth: Optional[int] = typer.Option(None, help="Max crawl depth (0 = only the start page)"),
+    user_agent: str = typer.Option("SiteScraper/0.1 (+https://example.com)", help="User-Agent header"),
+    no_report: bool = typer.Option(False, help="Skip generating HTML report"),
+) -> None:
+    run_scrape(url, output, concurrency, delay, max_pages, max_depth, user_agent, no_report)
 
 
 if __name__ == "__main__":
