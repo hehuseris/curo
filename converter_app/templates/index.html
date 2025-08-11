@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Universal File Converter</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Universal File Converter</h1>
+    <form id="convert-form" method="post" enctype="multipart/form-data" action="/convert">
+      <label>Choose file:</label>
+      <input type="file" name="file" required />
+
+      <label>Conversion type:</label>
+      <select name="conversion" id="conversion" required>
+        <option value="pdf_to_images">PDF → Images (PNG)</option>
+        <option value="image_to_image">Image → Image</option>
+        <option value="image_to_pdf">Image → PDF</option>
+        <option value="doc_to_pdf">Office Doc (DOCX/PPTX/XLSX/ODT) → PDF</option>
+        <option value="md_to_pdf">Markdown/TXT → PDF</option>
+        <option value="video_convert">Video → Format</option>
+        <option value="audio_convert">Audio → Format</option>
+        <option value="csv_to_json">CSV → JSON</option>
+        <option value="excel_to_json">Excel → JSON</option>
+        <option value="json_to_csv">JSON → CSV</option>
+        <option value="archive_extract">Archive Extract → Zip</option>
+        <option value="archive_create">Create Zip (single file)</option>
+      </select>
+
+      <div id="target-format-row" style="display: none;">
+        <label>Target format (e.g., png, jpg, webp, pdf, mp4, webm, mp3, wav):</label>
+        <input type="text" name="target_format" placeholder="png" />
+      </div>
+
+      <button type="submit">Convert</button>
+    </form>
+  </div>
+  <script>
+    const select = document.getElementById('conversion');
+    const targetRow = document.getElementById('target-format-row');
+    function updateTargetVisibility() {
+      const needsTarget = ['image_to_image', 'video_convert', 'audio_convert'].includes(select.value);
+      targetRow.style.display = needsTarget ? 'block' : 'none';
+    }
+    select.addEventListener('change', updateTargetVisibility);
+    updateTargetVisibility();
+  </script>
+</body>
+</html>
