@@ -21,8 +21,15 @@ class Trade:
 	profit: float | None = None
 
 
-def run_backtest(df: pd.DataFrame, p: StrategyParams, initial_balance: float, commission: float = 0.00075,
-					max_positions: int = 1) -> Dict[str, Any]:
+def run_backtest(
+	df: pd.DataFrame,
+	p: StrategyParams,
+	initial_balance: float,
+	commission: float = 0.00075,
+	max_positions: int = 1,
+	risk_per_trade_pct: float = 1.0,
+	slippage_bps: float = 0.0,
+) -> Dict[str, Any]:
 	feat = build_features(df, p)
 	sig = generate_signals(feat, p)
 
@@ -35,15 +42,20 @@ def run_backtest(df: pd.DataFrame, p: StrategyParams, initial_balance: float, co
 		price = float(row["close"])
 		if position is None:
 			if bool(row.get("long_entry", False)):
-				qty = (balance * (1 - commission)) / price
-				stop_price = price - row["atr"] * p.stop_atr_mult if not np.isnan(row["atr"]) else price * 0.95
-				take_price = price + row["atr"] * p.take_atr_mult if not np.isnan(row["atr"]) else price * 1.05
-				position = Trade(entry_time=ts, entry_price=price, qty=qty, stop_price=stop_price, take_price=take_price)
-				balance = 0.0
+				atr_val = float(row["atr"]) if not np.isnan(row["atr"]) else price * 0.02
+				stop_price = price - atr_val * p.stop_atr_mult
+				risk_per_unit = max(price - stop_price, price * 0.005)
+				capital_at_risk = balance * (risk_per_trade_pct / 100.0)
+				qty = max(capital_at_risk / risk_per_unit, 0.0)
+				entry_price = price * (1 + slippage_bps / 10000.0)
+				take_price = price + atr_val * p.take_atr_mult
+				position = Trade(entry_time=ts, entry_price=entry_price, qty=qty, stop_price=stop_price, take_price=take_price)
+				fee = entry_price * qty * commission
+				balance = max(balance - (entry_price * qty + fee), 0.0)
 		else:
 			# Check stops/takes first
 			if row["low"] <= position.stop_price:
-				exit_price = position.stop_price
+				exit_price = position.stop_price * (1 - slippage_bps / 10000.0)
 				fee = exit_price * position.qty * commission
 				balance = exit_price * position.qty - fee
 				position.exit_time = ts
@@ -52,7 +64,7 @@ def run_backtest(df: pd.DataFrame, p: StrategyParams, initial_balance: float, co
 				trades.append(position)
 				position = None
 			elif row["high"] >= position.take_price:
-				exit_price = position.take_price
+				exit_price = position.take_price * (1 - slippage_bps / 10000.0)
 				fee = exit_price * position.qty * commission
 				balance = exit_price * position.qty - fee
 				position.exit_time = ts
@@ -61,7 +73,7 @@ def run_backtest(df: pd.DataFrame, p: StrategyParams, initial_balance: float, co
 				trades.append(position)
 				position = None
 			elif bool(row.get("long_exit_signal", False)):
-				exit_price = price
+				exit_price = price * (1 - slippage_bps / 10000.0)
 				fee = exit_price * position.qty * commission
 				balance = exit_price * position.qty - fee
 				position.exit_time = ts
@@ -97,4 +109,3 @@ def run_backtest(df: pd.DataFrame, p: StrategyParams, initial_balance: float, co
 		"max_drawdown": float(max_dd),
 	}
 	return result
-

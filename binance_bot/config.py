@@ -22,6 +22,8 @@ class BacktestConfig:
 	commission: float = 0.00075
 	max_positions: int = 1
 	quote_asset: str = "USDT"
+	risk_per_trade_pct: float = 1.0
+	slippage_bps: float = 2.0
 
 
 @dataclass
