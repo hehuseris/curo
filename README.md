@@ -60,3 +60,32 @@ Notes
 - The crawler stays within the same origin (scheme + host + port).
 - PDFs are processed best-effort; complex layouts may not extract perfectly.
 - Respect target sites' robots and terms of service.
+
+## Binance Multi-Confirmation Trading Bot (new)
+
+Location: `binance_bot/`
+
+Features
+- Multi-confirmation strategy (EMA crossover + RSI + MACD + ATR risk)
+- Backtest on 4h timeframe across top 50 USDT pairs
+- Grid-search optimization per symbol
+- Paper trading scaffold; live hooks (Binance)
+
+Quick start
+
+```bash
+pip install -r binance_bot/requirements.txt
+
+# Optional for live/paper
+export BINANCE_API_KEY=your_key
+export BINANCE_API_SECRET=your_secret
+
+# Baseline backtest
+python -m binance_bot.cli backtest
+
+# Optimize per coin and save params
+python -m binance_bot.cli optimize
+
+# Paper run for a symbol using saved params
+python -m binance_bot.cli paper BTCUSDT
+```
