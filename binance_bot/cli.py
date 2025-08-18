@@ -15,6 +15,7 @@ from .report import summarize_backtest, plot_equity
 from .storage import save_json, load_json
 from .paper_trade import run_paper_session
 from .walkforward import walk_forward
+from .portfolio import run_portfolio_backtest
 
 
 def make_client(testnet: bool = False):
@@ -128,6 +129,54 @@ def cmd_walkforward(args: argparse.Namespace) -> None:
 	print(f"Walk-forward {args.symbol}: final ${res['final_balance']:.2f}, sharpe {res['sharpe']:.2f}")
 
 
+def cmd_paper_portfolio(args: argparse.Namespace) -> None:
+	cfg = load_config()
+	# Load best params if exist
+	try:
+		best = load_json("./binance_bot_outputs/best_params.json")
+	except Exception:
+		best = {}
+	params_by_symbol = {}
+	for sym, b in best.items():
+		pdct = b.get("params")
+		if pdct:
+			params_by_symbol[sym] = StrategyParams(**pdct)
+
+	# Prepare data
+	data_by_symbol: Dict[str, pd.DataFrame] = {}
+	if args.offline:
+		for sym in cfg.resolve_symbols(args.top):
+			data_by_symbol[sym] = generate_synthetic_klines(84, cfg.backtest.timeframe, cfg.backtest.end_date)
+	else:
+		client = make_client(testnet=False)
+		feed = CandleFeed(client)
+		for sym in cfg.resolve_symbols(args.top):
+			try:
+				# Use last ~2 weeks of 4h data ~ 84 bars
+				end = pd.Timestamp(cfg.backtest.end_date, tz="UTC")
+				start = (end - pd.Timedelta(days=14)).strftime("%Y-%m-%d")
+				data_by_symbol[sym] = feed.fetch_klines(sym, cfg.backtest.timeframe, start, cfg.backtest.end_date)
+			except Exception:
+				continue
+
+	# If no params, fall back to baseline for all symbols
+	if not params_by_symbol:
+		for sym in data_by_symbol.keys():
+			params_by_symbol[sym] = StrategyParams()
+
+	res = run_portfolio_backtest(
+		data_by_symbol,
+		params_by_symbol,
+		cfg.paper.initial_balance_usd,
+		commission=cfg.backtest.commission,
+		risk_per_trade_pct=cfg.backtest.risk_per_trade_pct,
+		slippage_bps=cfg.backtest.slippage_bps,
+	)
+	save_json("./binance_bot_outputs/paper_portfolio.json", res)
+	plot_equity(res, "./binance_bot_outputs/paper_portfolio.png")
+	print(f"Paper portfolio: final ${res['final_balance']:.2f}, sharpe {res['sharpe']:.2f}")
+
+
 def build_parser() -> argparse.ArgumentParser:
 	parser = argparse.ArgumentParser(description="Binance multi-confirmation trading bot")
 	sub = parser.add_subparsers(dest="cmd", required=True)
@@ -156,6 +205,11 @@ def build_parser() -> argparse.ArgumentParser:
 	p_wf.add_argument("--train-bars", type=int, default=300)
 	p_wf.add_argument("--test-bars", type=int, default=100)
 	p_wf.set_defaults(func=cmd_walkforward)
+
+	p_pf = sub.add_parser("paper-portfolio", help="2-week paper session across top N symbols with $1,000 total")
+	p_pf.add_argument("--top", type=int, default=10)
+	p_pf.add_argument("--offline", action="store_true", help="Use synthetic data")
+	p_pf.set_defaults(func=cmd_paper_portfolio)
 
 
 	return parser
