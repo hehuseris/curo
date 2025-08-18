@@ -107,5 +107,7 @@ def run_backtest(
 		"win_rate": float(np.mean([1.0 if t.profit and t.profit > 0 else 0.0 for t in trades]) if trades else 0.0),
 		"sharpe": float(sharpe),
 		"max_drawdown": float(max_dd),
+		"equity_index": [ts.isoformat() for ts in equity.index],
+		"equity": [float(x) for x in equity.values],
 	}
 	return result

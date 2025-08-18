@@ -11,9 +11,10 @@ from .data import CandleFeed, load_csv_klines, generate_synthetic_klines
 from .strategy import StrategyParams
 from .backtest import run_backtest
 from .optimizer import grid_search
-from .report import summarize_backtest
+from .report import summarize_backtest, plot_equity
 from .storage import save_json, load_json
 from .paper_trade import run_paper_session
+from .walkforward import walk_forward
 
 
 def make_client(testnet: bool = False):
@@ -112,6 +113,21 @@ def cmd_paper(args: argparse.Namespace) -> None:
 	print(f"Paper result {symbol}: final ${res['final_balance']:.2f}")
 
 
+def cmd_walkforward(args: argparse.Namespace) -> None:
+	cfg = load_config()
+	if args.offline:
+		from .data import generate_synthetic_klines
+		df = generate_synthetic_klines(1200, cfg.backtest.timeframe, cfg.backtest.start_date)
+	else:
+		client = make_client(testnet=False)
+		feed = CandleFeed(client)
+		df = feed.fetch_klines(args.symbol, cfg.backtest.timeframe, cfg.backtest.start_date, cfg.backtest.end_date)
+	res = walk_forward(df, cfg.backtest.initial_balance_usd, args.train_bars, args.test_bars)
+	save_json(f"./binance_bot_outputs/wf_{args.symbol}.json", res)
+	plot_equity(res, f"./binance_bot_outputs/wf_{args.symbol}.png")
+	print(f"Walk-forward {args.symbol}: final ${res['final_balance']:.2f}, sharpe {res['sharpe']:.2f}")
+
+
 def build_parser() -> argparse.ArgumentParser:
 	parser = argparse.ArgumentParser(description="Binance multi-confirmation trading bot")
 	sub = parser.add_subparsers(dest="cmd", required=True)
@@ -133,6 +149,14 @@ def build_parser() -> argparse.ArgumentParser:
 	p_paper = sub.add_parser("paper", help="Run paper trading over historical window for a symbol using best params")
 	p_paper.add_argument("symbol", help="Symbol like BTCUSDT")
 	p_paper.set_defaults(func=cmd_paper)
+
+	p_wf = sub.add_parser("walkforward", help="Walk-forward calibration on one symbol")
+	p_wf.add_argument("symbol", help="Symbol like BTCUSDT")
+	p_wf.add_argument("--offline", action="store_true", help="Use synthetic data instead of Binance API")
+	p_wf.add_argument("--train-bars", type=int, default=300)
+	p_wf.add_argument("--test-bars", type=int, default=100)
+	p_wf.set_defaults(func=cmd_walkforward)
+
 
 	return parser
 
